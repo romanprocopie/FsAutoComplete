@@ -512,6 +512,10 @@ type FSharpLspServer(backgroundServiceEnabled: bool, state: State, lspClient: FS
       SDK.Client.registeredAnalyzers.Count <> 0
 
     if hadAnalyzersBefore <> hasAnalyzersNow then
+      Loggers.analyzers.info
+        (Log.setMessage "Analyzers existence has changed: {before} -> {after}"
+        >> Log.addContextDestructured "before" hadAnalyzersBefore
+        >> Log.addContextDestructured "after" hasAnalyzersNow)
       let oldCommands = commands
       let oldDisposables = commandDisposables
 
@@ -533,6 +537,10 @@ type FSharpLspServer(backgroundServiceEnabled: bool, state: State, lspClient: FS
         disposable.Dispose()
 
       (oldCommands :> IDisposable).Dispose()
+    else
+      Loggers.analyzers.info
+        (Log.setMessage "Analyzers existence has not changed, it is still {what}"
+        >> Log.addContextDestructured "what" hadAnalyzersBefore)
 
     // only update the dotnet root if it's both a directory and exists
     let di = DirectoryInfo config.DotNetRoot
@@ -545,8 +553,14 @@ type FSharpLspServer(backgroundServiceEnabled: bool, state: State, lspClient: FS
           FileInfo(Path.Combine(di.FullName, "dotnet"))
 
       if dotnetBinary.Exists then
+        Loggers.analyzers.info
+          (Log.setMessage "Dotnet binary exists OK at '{path}'"
+          >> Log.addContextDestructured "path" dotnetBinary.FullName)
         commands.SetDotnetSDKRoot dotnetBinary
       else
+        Loggers.analyzers.info
+          (Log.setMessage "Dotnet binary could not be found at '{path}'"
+          >> Log.addContextDestructured "path" dotnetBinary.FullName)
         ()
     else
       // if we were mistakenly given the path to a dotnet binary
